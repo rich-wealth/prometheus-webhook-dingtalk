@@ -10,7 +10,7 @@ RUN ["/busybox/sh", "-c", "chown -R nobody:nobody /etc/prometheus-webhook-dingta
 
 ARG IMAGE_ARCH="amd64"
 FROM gcr.io/distroless/static:nonroot-${IMAGE_ARCH}
-LABEL maintainer="Timon Wong <timon86.wang@gmail.com>"
+LABEL maintainer="richwealth"
 
 ARG ARCH="amd64"
 ARG OS="linux"

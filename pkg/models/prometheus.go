@@ -113,6 +113,10 @@ type Data struct {
 
 	ExternalURL string `json:"externalURL"`
 	AtMobiles   []string
+
+	//custom
+	Source             string `json:"source,omitempty"`
+	DingtalkWebhookUrl string `json:"dingtalk_webhook_url,omitempty"`
 }
 
 // Alert holds one alert for notification templates.

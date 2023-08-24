@@ -1,9 +1,12 @@
 package dingtalk
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/go-chi/chi/v5"
@@ -92,6 +95,17 @@ func (api *API) serveSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//send custom third api
+	thirdApiUrl := os.Getenv("HTTP_THIRD_API_URL")
+	if thirdApiUrl != "" {
+		promMessage.Source = os.Getenv("HTTP_THIRD_API_SOURCE")
+		promMessage.DingtalkWebhookUrl = target.URL.String()
+		_, err := sendThirdApi(&promMessage, thirdApiUrl)
+		if err != nil {
+			level.Error(logger).Log("msg", "Failed to send third api", "err", err)
+		}
+	}
+
 	robotResp, err := notifier.SendNotification(notification, httpClient, &target)
 	if err != nil {
 		level.Error(logger).Log("msg", "Failed to send notification", "err", err)
@@ -106,4 +120,39 @@ func (api *API) serveSend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	io.WriteString(w, "OK")
+}
+
+func sendThirdApi(promMessage *models.WebhookMessage, url string) (bool, error) {
+	if url == "" {
+		return false, fmt.Errorf("error, url is empty")
+	}
+	body, err := json.Marshal(&promMessage)
+	if err != nil {
+		return false, fmt.Errorf("error encoding prometheus webhook msg: %w", err)
+	}
+
+	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return false, fmt.Errorf("error building third api request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy:             http.ProxyFromEnvironment,
+			DisableKeepAlives: true,
+		},
+	}
+	resp, err := httpClient.Do(httpReq)
+	if err != nil {
+		return false, fmt.Errorf("error sending third api: %w", err)
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != 200 {
+		return false, fmt.Errorf("unacceptable response code %d", resp.StatusCode)
+	}
+	return true, nil
 }

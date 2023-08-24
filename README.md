@@ -24,7 +24,7 @@ You can deploy this tool using the Docker image from following registry:
 #### Prerequisites
 
 1. [Go](https://golang.org/doc/install) (1.17 or greater is required)
-2. [Nodejs](https://nodejs.org/)
+2. [Nodejs](https://nodejs.org/) (16.20.1)
 
 #### Build
 
